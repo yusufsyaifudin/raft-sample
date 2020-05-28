@@ -5,7 +5,6 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"log"
 	"net"
@@ -19,21 +18,35 @@ import (
 // configRaft configuration for raft node
 type configRaft struct {
 	NodeId    string `mapstructure:"node_id"`
-	Host      string `mapstructure:"host"`
 	Port      int    `mapstructure:"port"`
 	VolumeDir string `mapstructure:"volume_dir"`
 }
 
 // configServer configuration for HTTP server
 type configServer struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Port int `mapstructure:"port"`
 }
 
 // config configuration
 type config struct {
 	Server configServer `mapstructure:"server"`
 	Raft   configRaft   `mapstructure:"raft"`
+}
+
+const (
+	serverPort = "SERVER_PORT"
+
+	raftNodeId = "RAFT_NODE_ID"
+	raftPort   = "RAFT_PORT"
+	raftVolDir = "RAFT_VOL_DIR"
+)
+
+var confKeys = []string{
+	serverPort,
+
+	raftNodeId,
+	raftPort,
+	raftVolDir,
 }
 
 const (
@@ -55,37 +68,28 @@ const (
 )
 
 // main entry point of application start
+// run using CONFIG=config.yaml ./program
 func main() {
-	args := os.Args
-	fmt.Println(args)
-
-	conf := config{}
-
-	pflag.String("config", "config.yaml", "select the config file, default to config.yaml")
-	pflag.Parse()
 
 	var v = viper.New()
-	if err := v.BindPFlags(pflag.CommandLine); err != nil {
+	v.AutomaticEnv()
+	if err := v.BindEnv(confKeys...); err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	v.SetConfigType("yaml")
-	v.SetConfigFile(v.GetString("config"))
-
-	log.Printf("using config file %s to running program\n", v.GetString("config"))
-
-	err := v.ReadInConfig()
-	if err != nil {
-		log.Fatal(err)
-		return
+	conf := config{
+		Server: configServer{
+			Port: v.GetInt(serverPort),
+		},
+		Raft: configRaft{
+			NodeId:    v.GetString(raftNodeId),
+			Port:      v.GetInt(raftPort),
+			VolumeDir: v.GetString(raftVolDir),
+		},
 	}
 
-	err = v.Unmarshal(&conf)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	log.Printf("%+v\n", conf)
 
 	// Preparing badgerDB
 	badgerOpt := badger.DefaultOptions(conf.Raft.VolumeDir)
@@ -101,7 +105,7 @@ func main() {
 		}
 	}()
 
-	var raftBinAddr = fmt.Sprintf("%s:%d", conf.Raft.Host, conf.Raft.Port)
+	var raftBinAddr = fmt.Sprintf(":%d", conf.Raft.Port)
 
 	raftConf := raft.DefaultConfig()
 	raftConf.LocalID = raft.ServerID(conf.Raft.NodeId)
@@ -158,7 +162,7 @@ func main() {
 
 	raftServer.BootstrapCluster(configuration)
 
-	srv := server.New(fmt.Sprintf("%s:%d", conf.Server.Host, conf.Server.Port), badgerDB, raftServer)
+	srv := server.New(fmt.Sprintf(":%d", conf.Server.Port), badgerDB, raftServer)
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
 	}

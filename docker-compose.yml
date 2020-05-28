@@ -1,0 +1,72 @@
+# docker build -t ysf/raftsample .
+# then run: docker-compose up
+# to connect, use IP from `docker network inspect bridge` and see the gateway IP
+# don't use localhost, 127.0.0.1 or 0.0.0.0
+
+version: '3.1'
+
+services:
+  node_1:
+    image: ysf/raftsample
+    environment:
+      - SERVER_PORT=2221
+      - RAFT_NODE_ID="node1"
+      - RAFT_PORT=1111
+      - RAFT_VOL_DIR="node_data"
+    volumes:
+      - './node_1_data:/app/node_data'
+    ports:
+      - 1111:1111
+      - 2221:2221
+
+  node_2:
+    image: ysf/raftsample
+    environment:
+      - SERVER_PORT=2221
+      - RAFT_NODE_ID="node2"
+      - RAFT_PORT=1111
+      - RAFT_VOL_DIR="node_data"
+    volumes:
+      - './node_2_data:/app/node_data'
+    ports:
+      - 1112:1111
+      - 2222:2221
+
+  node_3:
+    image: ysf/raftsample
+    environment:
+      - SERVER_PORT=2221
+      - RAFT_NODE_ID="node3"
+      - RAFT_PORT=1111
+      - RAFT_VOL_DIR="node_data"
+    volumes:
+      - './node_3_data:/app/node_data'
+    ports:
+      - 1113:1111
+      - 2223:2221
+
+  node_4:
+    image: ysf/raftsample
+    environment:
+      - SERVER_PORT=2221
+      - RAFT_NODE_ID="node4"
+      - RAFT_PORT=1111
+      - RAFT_VOL_DIR="node_data"
+    volumes:
+      - './node_4_data:/app/node_data'
+    ports:
+      - 1114:1111
+      - 2224:2221
+
+  node_5:
+    image: ysf/raftsample
+    environment:
+      - SERVER_PORT=2221
+      - RAFT_NODE_ID="node5"
+      - RAFT_PORT=1111
+      - RAFT_VOL_DIR="node_data"
+    volumes:
+      - './node_5_data:/app/node_data'
+    ports:
+      - 1115:1111
+      - 2225:2221

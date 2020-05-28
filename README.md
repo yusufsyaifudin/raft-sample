@@ -23,65 +23,20 @@ This means that we can read data from any server, but only can do writes and del
 
 `git clone` this project or download prebuilt executable files in Release, then set three (3) different config, for example:
 
-### config1.yaml
-```snakeyaml
-# serving up the HTTP server
-server:
-  host: 127.0.0.1
-  port: 2221
-
-# create raft node
-raft:
-  node_id: "node_1"
-  host: 127.0.0.1
-  port: 1111
-  volume_dir: "node_1_data"
-```
-
-### config2.yaml
-```snakeyaml
-# serving up the HTTP server
-server:
-  host: 127.0.0.1
-  port: 2222
-
-# create raft node
-raft:
-  node_id: "node_2"
-  host: 127.0.0.1
-  port: 1112
-  volume_dir: "node_2_data"
-```
-
-### config3.yaml
-```snakeyaml
-# serving up the HTTP server
-server:
-  host: 127.0.0.1
-  port: 2223
-
-# create raft node
-raft:
-  node_id: "node_3"
-  host: 127.0.0.1
-  port: 1113
-  volume_dir: "node_3_data"
-```
-
 Then run 3 server with different program in different terminal tab:
 
 ```bash
-$ go run ysf/raftsample/cmd/api --config config1.yaml
-$ go run ysf/raftsample/cmd/api --config config2.yaml
-$ go run ysf/raftsample/cmd/api --config config3.yaml
+$ SERVER_PORT=2221 RAFT_NODE_ID=node1 RAFT_PORT=1111 RAFT_VOL_DIR=node_1_data go run ysf/raftsample/cmd/api
+$ SERVER_PORT=2222 RAFT_NODE_ID=node2 RAFT_PORT=1112 RAFT_VOL_DIR=node_2_data go run ysf/raftsample/cmd/api
+$ SERVER_PORT=2223 RAFT_NODE_ID=node3 RAFT_PORT=1113 RAFT_VOL_DIR=node_3_data go run ysf/raftsample/cmd/api
 ```
 
 Or using prebuilt executable:
 
 ```bash
-$ ./raftsample --config config1.yaml
-$ ./raftsample --config config2.yaml
-$ ./raftsample --config config3.yaml
+$ SERVER_PORT=2221 RAFT_NODE_ID=node1 RAFT_PORT=1111 RAFT_VOL_DIR=node_1_data ./raftsample
+$ SERVER_PORT=2222 RAFT_NODE_ID=node2 RAFT_PORT=1112 RAFT_VOL_DIR=node_2_data ./raftsample
+$ SERVER_PORT=2223 RAFT_NODE_ID=node3 RAFT_PORT=1113 RAFT_VOL_DIR=node_3_data ./raftsample
 ```
 
 ## Creating clusters
@@ -137,6 +92,35 @@ Then, check each of this endpoint, it will return the status that the port 2221 
 * http://localhost:2223/raft/stats
 
 Now, raft cluster already created!
+
+## Using Docker
+
+First, build the image using command: `docker build -t ysf/raftsample .`
+
+Then, run using docker compose `docker-compose up`.
+
+To connect between cluster, use docker gateway IP, see using `docker network inspect bridge`,
+so instead of 
+
+```curl
+curl --location --request POST 'localhost:2221/raft/join' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+	"node_id": "node_2", 
+	"raft_address": "127.0.0.1:1112"
+}'
+```
+
+You must change the `127.0.0.1` to Bridge IP from docker inspect command, for example:
+
+```curl
+curl --location --request POST 'localhost:2221/raft/join' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+	"node_id": "node_2", 
+	"raft_address": "172.17.0.1:1112"
+}'
+```
 
 ## Store, Get and Delete Data
 
