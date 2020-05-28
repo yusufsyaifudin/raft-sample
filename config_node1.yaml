@@ -1,0 +1,11 @@
+# serving up the HTTP server
+server:
+  host: 127.0.0.1
+  port: 2221
+
+# create raft node
+raft:
+  node_id: "node_1"
+  host: 127.0.0.1
+  port: 1111
+  volume_dir: "node_1_data"
