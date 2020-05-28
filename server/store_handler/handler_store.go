@@ -60,6 +60,13 @@ func (h handler) Store(eCtx echo.Context) error {
 		})
 	}
 
+	_, ok := applyFuture.Response().(*fsm.ApplyResponse)
+	if !ok {
+		return eCtx.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": fmt.Sprintf("error response is not match apply response"),
+		})
+	}
+
 	return eCtx.JSON(http.StatusOK, map[string]interface{}{
 		"message": "success persisting data",
 		"data":    form,

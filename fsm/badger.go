@@ -16,7 +16,7 @@ type badgerFSM struct {
 }
 
 // get fetch data from badgerDB
-func (b badgerFSM) get(key string) interface{} {
+func (b badgerFSM) get(key string) (interface{}, error) {
 	var keyByte = []byte(key)
 	var data interface{}
 
@@ -28,7 +28,7 @@ func (b badgerFSM) get(key string) interface{} {
 	item, err := txn.Get(keyByte)
 	if err != nil {
 		data = map[string]interface{}{}
-		return data
+		return data, err
 	}
 
 	var value = make([]byte, 0)
@@ -39,7 +39,7 @@ func (b badgerFSM) get(key string) interface{} {
 
 	if err != nil {
 		data = map[string]interface{}{}
-		return data
+		return data, err
 	}
 
 	if value != nil && len(value) > 0 {
@@ -50,7 +50,7 @@ func (b badgerFSM) get(key string) interface{} {
 		data = map[string]interface{}{}
 	}
 
-	return data
+	return data, err
 }
 
 // set store data to badgerDB
@@ -108,15 +108,22 @@ func (b badgerFSM) Apply(log *raft.Log) interface{} {
 		op := strings.ToUpper(strings.TrimSpace(payload.Operation))
 		switch op {
 		case "SET":
-			if err := b.set(payload.Key, payload.Value); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "error save data %s\n", err.Error())
-				return nil
+			return &ApplyResponse{
+				Error: b.set(payload.Key, payload.Value),
+				Data:  payload.Value,
 			}
-			return payload.Value
 		case "GET":
-			return b.get(payload.Key)
+			data, err := b.get(payload.Key)
+			return &ApplyResponse{
+				Error: err,
+				Data:  data,
+			}
+
 		case "DELETE":
-			return b.delete(payload.Key)
+			return &ApplyResponse{
+				Error: b.delete(payload.Key),
+				Data:  nil,
+			}
 		}
 	}
 
