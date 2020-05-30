@@ -80,10 +80,6 @@ func (b badgerFSM) delete(key string) error {
 	var keyByte = []byte(key)
 
 	txn := b.db.NewTransaction(true)
-	defer func() {
-		_ = txn.Commit()
-	}()
-
 	err := txn.Delete(keyByte)
 	if err != nil {
 		return err
